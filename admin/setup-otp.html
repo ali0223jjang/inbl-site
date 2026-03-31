@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>OTP 초기 설정 — InfiniteBlock Admin</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/otpauth@9.3.4/dist/otpauth.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.11.0/src/sha256.min.js"></script>
+</head>
+<body>
+<div class="admin-wrap" style="align-items:flex-start;padding-top:60px;">
+  <div class="admin-box" style="max-width:560px;">
+    <div class="admin-logo">INFINITE<span style="color:var(--accent);">BLOCK</span></div>
+    <div class="admin-subtitle" style="margin-bottom:8px;">최초 1회 설정 페이지</div>
+    <h2 class="admin-title">OTP & 비밀번호 초기 설정</h2>
+
+    <div style="background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.2);border-radius:10px;padding:16px 20px;margin-bottom:28px;font-size:13px;color:var(--gray-2);line-height:1.7;">
+      ⚠️ <strong style="color:var(--accent);">보안 주의사항</strong><br/>
+      설정 완료 후 이 파일을 GitHub에서 삭제하세요!
+    </div>
+
+    <div style="margin-bottom:32px;">
+      <h3 style="font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--white);margin-bottom:12px;">Step 1. 관리자 비밀번호 해시 생성</h3>
+      <div class="form-group">
+        <label>새 비밀번호 (8자 이상)</label>
+        <input type="password" id="new-pw" placeholder="새 비밀번호 입력" style="background:var(--dark-3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;color:var(--white);font-size:14px;outline:none;width:100%;" />
+      </div>
+      <button onclick="generateHash()" class="admin-btn" style="margin-top:12px;max-width:200px;">해시 생성</button>
+      <div id="hash-result" style="margin-top:12px;display:none;">
+        <div style="font-size:12px;color:var(--gray-3);margin-bottom:6px;">config.js의 ADMIN_PW_HASH에 아래 값을 붙여넣으세요:</div>
+        <div id="hash-value" style="font-family:monospace;font-size:12px;color:var(--accent);background:var(--dark-3);padding:10px 14px;border-radius:8px;word-break:break-all;"></div>
+      </div>
+    </div>
+
+    <div style="margin-bottom:32px;">
+      <h3 style="font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--white);margin-bottom:12px;">Step 2. Google Authenticator OTP 등록</h3>
+      <button onclick="generateOTP()" class="admin-btn" style="max-width:220px;">OTP Secret 생성 & QR 표시</button>
+      <div id="otp-result" style="margin-top:20px;display:none;">
+        <canvas id="qr-canvas" style="display:block;margin:0 auto 16px;border-radius:10px;"></canvas>
+        <div style="font-size:12px;color:var(--gray-3);margin-bottom:6px;">수동 입력용 Secret:</div>
+        <div id="secret-value" style="font-family:monospace;font-size:13px;color:var(--accent);background:var(--dark-3);padding:10px 14px;border-radius:8px;letter-spacing:0.05em;word-break:break-all;"></div>
+        <div style="margin-top:12px;font-size:12px;color:var(--gray-3);">config.js의 ADMIN_TOTP_SECRET에 위 값을 붙여넣으세요.</div>
+      </div>
+    </div>
+
+    <div>
+      <h3 style="font-family:var(--font-ui);font-size:15px;font-weight:700;color:var(--white);margin-bottom:12px;">Step 3. OTP 코드 검증</h3>
+      <div class="form-group">
+        <label>Google Authenticator 코드 입력</label>
+        <input type="text" id="verify-code" placeholder="6자리 코드" maxlength="6" style="background:var(--dark-3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;color:var(--white);font-size:14px;outline:none;width:100%;" />
+      </div>
+      <button onclick="verifyOTP()" class="admin-btn" style="margin-top:12px;max-width:140px;">코드 검증</button>
+      <div id="verify-result" style="margin-top:10px;font-size:13px;"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+let currentSecret = null;
+
+function generateHash() {
+  const pw = document.getElementById('new-pw').value;
+  if (pw.length < 8) { alert('비밀번호는 8자 이상이어야 합니다.'); return; }
+  const hash = sha256(pw);
+  document.getElementById('hash-value').textContent = hash;
+  document.getElementById('hash-result').style.display = 'block';
+}
+
+function generateOTP() {
+  const secret = new OTPAuth.Secret();
+  currentSecret = secret.base32;
+  const totp = new OTPAuth.TOTP({
+    issuer: 'InfiniteBlock',
+    label: 'Admin',
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+    secret,
+  });
+  const uri = totp.toString();
+  QRCode.toCanvas(document.getElementById('qr-canvas'), uri, { width: 200, color: { dark: '#000', light: '#fff' } });
+  document.getElementById('secret-value').textContent = currentSecret;
+  document.getElementById('otp-result').style.display = 'block';
+}
+
+function verifyOTP() {
+  if (!currentSecret) { alert('먼저 OTP Secret을 생성하세요.'); return; }
+  const code = document.getElementById('verify-code').value;
+  const totp = new OTPAuth.TOTP({
+    issuer: 'InfiniteBlock',
+    label: 'Admin',
+    algorithm: 'SHA1',
+    digits: 6,
+    period: 30,
+    secret: OTPAuth.Secret.fromBase32(currentSecret),
+  });
+  const delta = totp.validate({ token: code, window: 1 });
+  const el = document.getElementById('verify-result');
+  if (delta !== null) {
+    el.style.color = 'var(--accent)';
+    el.textContent = '✓ OTP 코드가 일치합니다! 설정 완료!';
+  } else {
+    el.style.color = '#ff6b6b';
+    el.textContent = '✗ 코드가 일치하지 않습니다. 다시 확인하세요.';
+  }
+}
+</script>
+</body>
+</html>
