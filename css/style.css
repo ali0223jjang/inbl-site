@@ -461,7 +461,7 @@ section { padding: 100px 0; }
 .faq { padding: 60px 0 !important; }
 
 /* 푸터 로고 크게 */
-.footer-logo img { height: 50px !important; }
+.footer-logo img { height: 60px !important; }
 
 /* 푸터 회사정보 가로 배치 */
 .footer-bottom-inner {
@@ -476,9 +476,9 @@ section { padding: 100px 0; }
 
 /* 푸터 주소 색상 밝게 */
 .footer-corp p, .footer-contact p {
-  color: #aaaaaa !important;
+  color: #dddddd !important;
   font-size: 13px !important;
   line-height: 2 !important;
 }
-.footer-privacy { color: #aaaaaa !important; }
-.footer-copy { color: #777777 !important; }
+.footer-privacy { color: #dddddd !important; }
+.footer-copy { color: #999999 !important; }
