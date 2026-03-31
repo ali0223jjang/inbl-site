@@ -470,3 +470,15 @@ section { padding: 100px 0; }
   gap: 40px !important;
   align-items: start !important;
 }
+
+/* 공지사항 타이틀 숨기기 */
+.faq .section-header { display: none; }
+
+/* 푸터 주소 색상 밝게 */
+.footer-corp p, .footer-contact p {
+  color: #aaaaaa !important;
+  font-size: 13px !important;
+  line-height: 2 !important;
+}
+.footer-privacy { color: #aaaaaa !important; }
+.footer-copy { color: #777777 !important; }
