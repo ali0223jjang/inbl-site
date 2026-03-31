@@ -81,8 +81,9 @@ function generateOTP() {
     secret,
   });
   const uri = totp.toString();
-  QRCode.toCanvas(document.getElementById('qr-canvas'), uri, { width: 200, color: { dark: '#000', light: '#fff' } });
-  document.getElementById('secret-value').textContent = currentSecret;
+const canvas = document.getElementById('qr-canvas');
+canvas.style.display = 'block';
+new QRCode(canvas, { text: uri, width: 200, height: 200 });  document.getElementById('secret-value').textContent = currentSecret;
   document.getElementById('otp-result').style.display = 'block';
 }
 
