@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Login — InfiniteBlock</title>
+  <link rel="stylesheet" href="../css/style.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/otpauth@9.3.4/dist/otpauth.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-sha256@0.11.0/src/sha256.min.js"></script>
+</head>
+<body>
+<div class="admin-wrap">
+  <div class="admin-box" id="login-step">
+    <div class="admin-logo">INFINITE<span>BLOCK</span></div>
+    <div class="admin-subtitle">관리자 로그인</div>
+    <h2 class="admin-title">비밀번호 입력</h2>
+    <form class="admin-form" id="pw-form">
+      <div class="form-group">
+        <label>비밀번호</label>
+        <input type="password" id="pw-input" placeholder="관리자 비밀번호" autocomplete="current-password" />
+      </div>
+      <div class="admin-err" id="pw-err"></div>
+      <button type="submit" class="admin-btn">다음 →</button>
+    </form>
+  </div>
+  <div class="admin-box" id="otp-step" style="display:none;">
+    <div class="admin-logo">INFINITE<span>BLOCK</span></div>
+    <div class="admin-subtitle">2단계 인증 (ISMS 요구사항)</div>
+    <h2 class="admin-title">OTP 인증</h2>
+    <form class="admin-form" id="otp-form">
+      <div class="form-group">
+        <label>Google Authenticator 6자리 코드</label>
+        <input type="text" id="otp-input" placeholder="000000" maxlength="6" inputmode="numeric" pattern="[0-9]{6}" autocomplete="one-time-code" />
+      </div>
+      <div class="admin-err" id="otp-err"></div>
+      <button type="submit" class="admin-btn">로그인</button>
+      <div class="otp-hint">Google Authenticator 앱에서 코드를 확인하세요</div>
+    </form>
+  </div>
+</div>
+<script src="../js/config.js"></script>
+<script>
+document.getElementById('pw-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const pw = document.getElementById('pw-input').value;
+  const hash = sha256(pw);
+  if (hash === ADMIN_PW_HASH) {
+    document.getElementById('login-step').style.display = 'none';
+    document.getElementById('otp-step').style.display = 'block';
+    document.getElementById('otp-input').focus();
+    document.getElementById('pw-err').textContent = '';
+  } else {
+    document.getElementById('pw-err').textContent = '비밀번호가 올바르지 않습니다.';
+  }
+});
+document.getElementById('otp-form').addEventListener('submit', (e) => {
+  e.preventDefault();
+  const code = document.getElementById('otp-input').value.trim();
+  try {
+    const totp = new OTPAuth.TOTP({
+      issuer: 'InfiniteBlock',
+      label: 'Admin',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: OTPAuth.Secret.fromBase32(ADMIN_TOTP_SECRET),
+    });
+    const delta = totp.validate({ token: code, window: 1 });
+    if (delta !== null) {
+      const expiry = Date.now() + 24 * 60 * 60 * 1000;
+      sessionStorage.setItem('admin_auth', JSON.stringify({ ok: true, expiry }));
+      window.location.href = 'dashboard.html';
+    } else {
+      document.getElementById('otp-err').textContent = 'OTP 코드가 올바르지 않습니다. 다시 확인해주세요.';
+      document.getElementById('otp-input').value = '';
+    }
+  } catch (err) {
+    document.getElementById('otp-err').textContent = '인증 오류: TOTP Secret을 확인해주세요.';
+  }
+});
+</script>
+</body>
+</html>
